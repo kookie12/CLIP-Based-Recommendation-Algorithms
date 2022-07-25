@@ -4,7 +4,7 @@ import torch
 import cv2
 import os
 import numpy as np
-
+# 이 파일은 clip 학습 시 사용되는 파일. test 시에는 사용되지 않는다.
 clip_version = "ViT-B/16"
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 #Must set jit=False for training

@@ -77,11 +77,18 @@ main {
 header .image {
     width: 30%;
     height: auto;
-    display: inline-block;
+    /* 이게 바로 옆에 배치할수있는것 */
+    /* display: inline-block;  */
+    display: flex;
+    justify-content: center;
     margin-top: 20px;
     margin-bottom: 20px;
     margin-left: auto;
     margin-right: auto;
+}
+
+header .image .image-box {
+    justify-content: center;
 }
 
 header .caption {
@@ -89,7 +96,20 @@ header .caption {
     margin-left: 10px;
     margin-right: 10px;
     text-align: left;
-    float: left;
+}
+
+header .recommendation {
+    /* display: flex; */
+    justify-content: center;
+}
+
+header .image-under-caption p {
+    color: black;
+}
+
+header .caption h4 {
+    color: black;
+    font-size: 1.0em; 
 }
 
 footer {
@@ -97,6 +117,15 @@ footer {
     padding: 5vh 0;
     text-align: center;
     position: relative;
+}
+
+footer .p {
+    font-size: 0.8em;
+}
+
+footer .group {
+    font-size: 0.8em;
+    text-align: center;
 }
 
 small {

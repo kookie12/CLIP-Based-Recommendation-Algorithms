@@ -1,8 +1,8 @@
-# Modified by Sehyun Kim, 2022-07-20(July 20th, 2022), @RebuilderAI, Seoul, South Korea
+# Modified by Sehyun Kim, Gwan Hyeong Koo, 2022-07-20(July 20th, 2022), @RebuilderAI, Seoul, South Korea
 
 BATCH_SIZE = 4
 EPOCH = 10
-
+print("start eval.py")
 import torch
 import os
 import cv2
@@ -90,28 +90,29 @@ obj_topk = 10
 num_captions = 5
 
 def img2text_CLIP(img_path):
-    # Load image
+    # Load image 
     image = cv2.imread(img_path)
     img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # , cv2.COLOR_BGR2RGB
     
     img_feats = get_img_feats(model, preprocess, img)
     
-    img_moods_feats = get_text_feats(model, [f'Mood of the image is {t}.' for t in img_moods])
-    sorted_img_moods, img_mood_scores = get_nn_text(img_moods, img_moods_feats, img_feats)
-    img_mood = sorted_img_moods[0]
+    # img_moods_feats = get_text_feats(model, [f'Mood of the image is {t}.' for t in img_moods])
+    # sorted_img_moods, img_mood_scores = get_nn_text(img_moods, img_moods_feats, img_feats)
+    # img_mood = sorted_img_moods[0]
 
     ### Zero-shot VLM: classify image color
-    img_colors_feats = get_text_feats(model, [f'Color of the image background is {t}.' for t in img_colors])
+    # img_colors_feats = get_text_feats(model, [f'Color of the image background is {t}.' for t in img_colors])
+    img_colors_feats = get_text_feats(model, [f'Color of the image is {t}.' for t in img_colors])
     sorted_img_colors, img_color_scores = get_nn_text(img_colors, img_colors_feats, img_feats)
     img_color = sorted_img_colors[0]
 
     # Zero-shot VLM: classify places.
     # place_topk = 3
-    place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in place_texts ])
-    sorted_places, places_scores = get_nn_text(place_texts, place_feats, img_feats)
+    # place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in place_texts ])
+    # sorted_places, places_scores = get_nn_text(place_texts, place_feats, img_feats)
 
     # Zero-shot VLM: classify objects.
-    
+    # obj_topk = 10
     sorted_obj_texts, obj_scores = get_nn_text(object_texts, object_feats, img_feats)
     object_list = ''
     for i in range(obj_topk):
@@ -119,10 +120,11 @@ def img2text_CLIP(img_path):
     object_list = object_list[:-2]
 
     # Zero-shot LM: generate captions.
+    # I am an intelligent image captioning bot.
     prompt = f'''
-        I am an intelligent image captioning bot.
-        I think there might be a {object_list} in {sorted_places[0]} with a {img_color} {img_mood} background.
-        Please recommend a background that goes well with selling this item. What kind of studio, lighting atmosphere, and props would fit?'''
+        I think there might be a {object_list} and color of the image is {img_color}.
+        Please recommend a background that goes well with selling this item. What kind of studio, lighting atmosphere, and props would fit?
+        It must include three conditions.'''
     
     # Using GPT-3, generate image captions
     caption_texts = [prompt_llm(prompt, temperature=0.9) for _ in range(num_captions)]
@@ -132,4 +134,4 @@ def img2text_CLIP(img_path):
     sorted_captions, caption_scores = get_nn_text(caption_texts, caption_feats, img_feats)
     
     # It only returns a single caption(how many sentences should you generate depends on your taste)
-    return sorted_captions[0]
+    return sorted_captions

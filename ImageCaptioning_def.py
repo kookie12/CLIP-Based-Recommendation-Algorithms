@@ -1,4 +1,4 @@
-# Modified by Sehyun Kim, 2022-07-20(July 20th, 2022), @RebuilderAI, Seoul, South Korea
+# Modified by Sehyun Kim, Gwan Hyeong Koo, 2022-07-20(July 20th, 2022), @RebuilderAI, Seoul, South Korea
 
 import clip
 import numpy as np

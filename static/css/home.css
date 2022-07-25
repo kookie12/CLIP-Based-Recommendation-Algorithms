@@ -110,6 +110,15 @@ footer {
   position: relative;
 }
 
+footer .p {
+  font-size: 0.8em;
+}
+
+footer .group {
+  font-size: 0.8em;
+  text-align: center;
+}
+
 small {
   opacity: 0.5;
   font-weight: 300;
