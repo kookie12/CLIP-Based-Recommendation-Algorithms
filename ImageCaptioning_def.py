@@ -5,7 +5,8 @@ import numpy as np
 import openai
 from PIL import Image
 import torch
-openai_api_key = "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"
+#openai_api_key = "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"
+openai_api_key = "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"
 openai.api_key = openai_api_key
 
 # With clip_version ViT-L/14 inference for each image takes more than 12 seconds, too slow to use.
@@ -54,6 +55,25 @@ def get_nn_text(raw_texts, text_feats, img_feats):
     high_to_low_texts = [raw_texts[i] for i in high_to_low_ids]
     high_to_low_scores = np.sort(scores).squeeze()[::-1]
     return high_to_low_texts, high_to_low_scores
+
+def get_nn_text_customized(raw_texts, text_feats, img_feats):
+    scores = text_feats @ img_feats.T
+    scores = scores.squeeze()
+    high_to_low_ids = np.argsort(scores).squeeze()[::-1]
+    high_to_low_texts = [raw_texts[i] for i in high_to_low_ids]
+    unsorted_scores = scores.squeeze()[::-1]
+
+    max_item = max(unsorted_scores)
+    curr_range = max_item - min(unsorted_scores)
+    new_vec = []
+    for i in range(len(unsorted_scores)):
+        dist = round((max_item - unsorted_scores[i]) * ((1/curr_range)**2), 4)
+        new_vec.append(unsorted_scores[i] - dist)
+        
+    min_new_vec = min(new_vec)
+    new_scores_upscaled = [x-min_new_vec for x in new_vec]
+
+    return high_to_low_texts, new_scores_upscaled
 
 # Define GPT-3 helper functions
 def prompt_llm(prompt, max_tokens=64, temperature=0, stop=None):

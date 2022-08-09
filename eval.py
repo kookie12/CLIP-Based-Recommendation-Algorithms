@@ -74,24 +74,37 @@ else:
         object_feats = pickle.load(feat_fd)
 
 # Zero-shot VLM: Classify image mood
-img_moods = ['calm', 'monotonous',  'festive', 'gloomy', 'dreary', 'grotesque', 'cozy', 'hopeful', 
-                'hopeless', 'promising', 'horrible', 'scary', 'frightening', 'humorous', 'mysterious', 
-                'peaceful', 'romantic', 'solitary', 'urgent', 'tense', 'tragic', 'comic', 'desperate', 
-                'dynamic', 'moving', 'touching', 'encouraging', 'heartening', 'depressing', 'discouraging', 
-                'disheartening', 'fantastic', 'awesome', 'spectacular', 'stressful', 'lively', 'brisk', 'dull', 
-                'boring', 'wearisome', 'tiresome', 'inspiring', 'relaxing', 'nostalgic', 'disgusting', 
-                'delightful', 'joyful', 'pleasant', 'merry', 'idle', 'solemn', 'grave', 'annoying', 'irritating', 
-                'threatening', 'gorgeous', 'prophetic', 'suspenseful', 'thrilling', 'pastoral', 'pitiful', 
-                'magnificent', 'natural']
+# img_moods_original = ['calm', 'monotonous',  'festive', 'gloomy', 'dreary', 'grotesque', 'cozy', 'hopeful', 
+#                 'hopeless', 'promising', 'horrible', 'scary', 'frightening', 'humorous', 'mysterious', 
+#                 'peaceful', 'romantic', 'solitary', 'urgent', 'tense', 'tragic', 'comic', 'desperate', 
+#                 'dynamic', 'moving', 'touching', 'encouraging', 'heartening', 'depressing', 'discouraging', 
+#                 'disheartening', 'fantastic', 'awesome', 'spectacular', 'stressful', 'lively', 'brisk', 'dull', 
+#                 'boring', 'wearisome', 'tiresome', 'inspiring', 'relaxing', 'nostalgic', 'disgusting', 
+#                 'delightful', 'joyful', 'pleasant', 'merry', 'idle', 'solemn', 'grave', 'annoying', 'irritating', 
+#                 'threatening', 'gorgeous', 'prophetic', 'suspenseful', 'thrilling', 'pastoral', 'pitiful', 
+#                 'magnificent', 'natural']
 
-img_colors = ['White', 'Yellow', 'Blue', 'Red', 'Green', 'Black', 'Brown', 'Beige', 'Azure', 'Ivory', 'Teal', 'Silver', 'Purple', 'Navy blue', 'Pea green', 'Gray', 'Orange', 'Maroon', 'Charcoal', 'Aquamarine', 'Coral', 'Fuchsia', 'Wheat', 'Lime', 'Crimson', 'Khaki', 'Hot pink', 'Magenta', 'Olden', 'Plum', 'Olive', 'Cyan']
+img_moods_original = ['calm', 'monotonous', 'gloomy', 'cozy', 'hopeful', 
+                'promising', 'horrible', 'scary', 'mysterious', 
+                'peaceful', 'romantic', 'solitary', 'touching', 'depressing', 
+                'fantastic', 'lively']
+
+# img_styles = ['modern', 'luxury', 'nature', 'street', 'wood', 'neon', 'antique', 'traditional',
+#               'industrial', 'cozy', 'science-fiction', 'simple', 'office', 'bathroom'] # abstract
+
+img_styles = ['black modern', 'white modern', 'black luxury', 'white luxury', 'nature with green plant', 'street hiphop', 
+              'dark brown wood', 'light brown wood', 'neon sign', 'antique', 'traditional', 'industrial', 'cozy', 
+              'science-fiction', 'magical', 'pink romantic', 'artistic', 'office', 'bathroom']
+
+img_colors = ['white', 'yellow', 'blue', 'red', 'green', 'black', 'brown', 'beige', 'ivory', 'silver', 'purple', 'navy', 'gray', 'orange', 'pink', 'khaki']
 
 obj_topk = 10
-num_captions = 5
+num_captions = 3
 
 def img2text_CLIP(img_path):
     # Load image 
     image = cv2.imread(img_path)
+    print("image shape : ", image.shape)
     img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # , cv2.COLOR_BGR2RGB
     
     img_feats = get_img_feats(model, preprocess, img)
@@ -121,17 +134,46 @@ def img2text_CLIP(img_path):
 
     # Zero-shot LM: generate captions.
     # I am an intelligent image captioning bot.
-    prompt = f'''
-        I think there might be a {object_list} and color of the image is {img_color}.
-        Please recommend a background that goes well with selling this item. What kind of studio, lighting atmosphere, and props would fit?
-        It must include three conditions.'''
+    # prompt_origin = f'''
+    #     I think there might be a {object_list} and color of the image is {img_color}.
+    #     Please recommend a background that goes well with selling this item. What kind of studio, lighting atmosphere, and props would fit?
+    #     It must include three conditions.'''
+        
+    # prompt = f'''
+    # This object is {object_list} and this color is {img_color}. Please recommend a background that goes well with selling this item. 
+    # You must completion follow setence,
+    # "The mood of the studio should be img_mood and the best studio light is img_light. The two best background colors are img_colors. 
+    # The reason is r1"
+    # '''
     
+    prompt_show = f'''
+    This object is {object_list} and the object color is {img_color}. 
+    Please recommend a background that goes well with selling this item. 
+    What kind of studio, best studio light, and props would fit? 
+    Explain why you think the background is the best for this item in detail.
+    '''
+    
+    prompt_style_color = f'''
+    This object is {object_list} and the object color is {img_color}.
+    Please answer the following two questions.
+    1. Which three styles best fit with this object in {img_styles}? You must answer only three words.
+    2. Which three colors best fit with this object in {img_colors}? You must answer only three words.
+    '''
+    # Please enumerate in [] only three words.
+    
+    # The reason is r1    
     # Using GPT-3, generate image captions
-    caption_texts = [prompt_llm(prompt, temperature=0.9) for _ in range(num_captions)]
+    caption_texts_show = [prompt_llm(prompt_show, temperature=0.9) for _ in range(num_captions)]
+    caption_texts_style_color = [prompt_llm(prompt_style_color, temperature=0.9) for _ in range(num_captions)]
 
     # Zero-shot VLM: rank captions
-    caption_feats = get_text_feats(model, caption_texts)
-    sorted_captions, caption_scores = get_nn_text(caption_texts, caption_feats, img_feats)
+    caption_feats = get_text_feats(model, caption_texts_show)
+    sorted_captions_show, caption_scores = get_nn_text(caption_texts_show, caption_feats, img_feats)
+    
+    caption_feats = get_text_feats(model, caption_texts_style_color)
+    sorted_captions_style_color, caption_scores = get_nn_text(caption_texts_style_color, caption_feats, img_feats)
+    
+    print("### sorted_caption_style_color : ", sorted_captions_style_color)
     
     # It only returns a single caption(how many sentences should you generate depends on your taste)
-    return sorted_captions
+    return sorted_captions_show, sorted_captions_style_color

@@ -35,17 +35,22 @@
             </div>
             <div class="recommendation">
                 {% for i in range(num_caption) %}
-                    <img src = "{{ url_for('static', filename=recommended_imgs[i]) }}" width="150">
+                <div class="box">
+                    <img src = "{{ url_for('static', filename=recommended_imgs[i]) }}" width="230">
+                    <div class="in-box">
+                        <p>{{recommended_captions[i]}}</p>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
             <div class="image-under-caption">
-                <p>recommendation</p>
+                <p>recommendations</p>
             </div>
-            <div class="caption">
+            <!--<div class="caption">
                 {% for i in range(num_caption) %}
                     <h4>{{i}}st : {{recommended_captions[i]}}</h4>
                 {% endfor %}
-            </div>
+            </div>-->
             <div>
                 <form>
                     <input class="btn btn-outline-dark" type="button" value="돌아가기" onclick="window.location.href='/'" />

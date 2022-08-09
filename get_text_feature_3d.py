@@ -1,3 +1,5 @@
+# 3d 배경 데이터셋의 caption을 csv에 생성해주는 파일입니다. (현재 사용하지 않음) revised by kookie12
+
 from importlib_metadata import Pair
 import torch
 import os
@@ -105,22 +107,25 @@ def img2text_CLIP(img_path):
     ### Zero-shot VLM: classify image mood
     img_moods_feats = get_text_feats(model, [f'Mood of the image is {t}.' for t in img_moods])
     sorted_img_moods, img_mood_scores = get_nn_text(img_moods, img_moods_feats, img_feats)
-    img_mood = sorted_img_moods[0]
+    img_mood_1 = sorted_img_moods[0]
+    img_mood_2 = sorted_img_moods[1]
+    img_mood_3 = sorted_img_moods[2]
 
     ### Zero-shot VLM: classify image color
     img_colors_feats = get_text_feats(model, [f'Color of the image background is {t}.' for t in img_colors])
     sorted_img_colors, img_color_scores = get_nn_text(img_colors, img_colors_feats, img_feats)
-    img_color = sorted_img_colors[0]
+    img_color_1 = sorted_img_colors[0]
+    img_color_2 = sorted_img_colors[1]
     
     ### Zero-shot VLM: classify image lightening
-    img_lights_feats = get_text_feats(model, [f'Light atmosphere of the image is {t}.' for t in img_lights])
+    img_lights_feats = get_text_feats(model, [f'The best studio lighting is {t}.' for t in img_lights]) 
     sorted_img_lights, img_mood_scores = get_nn_text(img_lights, img_lights_feats, img_feats)
     img_light = sorted_img_lights[0]
 
     # Zero-shot VLM: classify places.
     # place_topk = 3
-    place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in place_texts ])
-    sorted_places, places_scores = get_nn_text(place_texts, place_feats, img_feats)
+    # place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in place_texts ])
+    # sorted_places, places_scores = get_nn_text(place_texts, place_feats, img_feats)
 
     # Zero-shot VLM: classify objects.
     obj_topk = 2
@@ -146,8 +151,14 @@ def img2text_CLIP(img_path):
     # prompt = f'''
     #     I think there might be a {object_list}.
     #     Please recommend a background that goes well with selling this item. What kind of studio, lighting atmosphere, and props would fit?'''
-    label = f'''The mood of this studio image is {img_mood} and studio lightening is {img_light},
-    this image includes a {objects}, and the background color is {img_color}.'''
+    # label_origin = f'''The mood of this studio image is {img_mood} and studio lightening is {img_light},
+    # this image includes a {objects}, and the background color is {img_color}.'''
+    
+    label = f'''
+    The mood of the studio should be {img_mood_1}, {img_mood_2}, {img_mood_3} and the best studio lighting is {img_light}. 
+    The two best background colors are {img_color_1} and {img_color_2}.
+    '''
+    
     print("label : ", label)
     return label
         
@@ -194,7 +205,7 @@ def embedding():
         values = output_dict_en.values()
         object_dict = {'file_path':keys, 'caption':values}
         df = pd.DataFrame(object_dict)
-        df.to_csv('answer.csv')
+        df.to_csv('3d_asset_bg_caption_0727.csv')
         # object_dict[key] = value
         # for pair in pairs:
         #     pair_first = pair[0]

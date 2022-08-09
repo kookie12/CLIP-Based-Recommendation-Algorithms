@@ -99,12 +99,29 @@ header .caption {
 }
 
 header .recommendation {
-    /* display: flex; */
+    display: flex;
     justify-content: center;
+}
+
+header .recommendation .box{
+    justify-content: center;
+    display: block;
+    margin-right: 10px;
+}
+
+header .recommendation .box .in-box p{
+    display: block;
+    text-align: center;
+    color: black;
+    margin-bottom: 15px;
+    font-size: 1.2em;
 }
 
 header .image-under-caption p {
     color: black;
+    margin-top: 15px;
+    margin-bottom: 30px;
+    font-size: 1.5em; 
 }
 
 header .caption h4 {
