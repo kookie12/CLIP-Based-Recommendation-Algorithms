@@ -65,6 +65,7 @@ def get_nn_text_customized(raw_texts, text_feats, img_feats):
 
     max_item = max(unsorted_scores)
     curr_range = max_item - min(unsorted_scores)
+    
     new_vec = []
     for i in range(len(unsorted_scores)):
         dist = round((max_item - unsorted_scores[i]) * ((1/curr_range)**2), 4)

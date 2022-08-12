@@ -95,48 +95,6 @@ img_colors = ['White', 'Yellow', 'Blue', 'Red', 'Green',
 obj_topk = 10
 num_captions = 3
 
-def seans_img2text_CLIP(prod_img_path, bg_style_sc_path, bg_color_sc_path):
-    # Load image 
-    prod_image = cv2.imread(prod_img_path)
-    prod_image = cv2.cvtColor(prod_image, cv2.COLOR_BGR2RGB) # , cv2.COLOR_BGR2RGB
-    prod_img_feats = get_img_feats(model, preprocess, prod_image)
-    
-    # define cos similarity
-    cos_similarity = nn.CosineSimilarity(dim=0, eps=1e-6) 
-    
-    # Get image style, color, and mood
-    # bg_style_sc_path may be '../results/extended_style_score_bg_KYJ.csv'
-    bg_style_score_df = pd.read_csv(bg_style_sc_path)
-    bg_color_score_df = pd.read_csv(bg_color_sc_path)
-    
-    ### Zero-shot VLM: classify image style
-    img_styles_feats = get_text_feats(model, [f'Style of the image is {t}.' for t in img_styles])
-    sorted_img_styles, prod_img_style_scores = get_nn_text_customized(img_styles, img_styles_feats, prod_img_feats)
-
-    img_colors_feats = get_text_feats(model, [f'Color of the image is {t}.' for t in img_colors])
-    sorted_img_colors, prod_img_color_scores = get_nn_text_customized(img_colors, img_colors_feats, prod_img_feats)
-
-    result_dict = {}
-    
-    cp_prod_style_sc = prod_img_style_scores.copy()
-    cp_prod_color_sc = prod_img_color_scores.copy()
-    cp_bg_style_sc = bg_style_score_df.copy()
-    cp_bg_color_sc = bg_color_score_df.copy()
-
-    for bg_fName in bg_style_score_df.columns:
-        result_dict[bg_fName] = []
-        style_similarity = cos_similarity(torch.tensor(cp_prod_style_sc), torch.tensor(cp_bg_style_sc[bg_fName]))
-        color_similarity = cos_similarity(torch.tensor(cp_prod_color_sc), torch.tensor(cp_bg_color_sc[bg_fName]))
-        result_dict[bg_fName].append(style_similarity)
-        result_dict[bg_fName].append(color_similarity)
-
-    sorted_style_sim_bg_img = sorted(result_dict.items(), key=lambda item: item[1][0])
-    sorted_color_sim_bg_img = sorted(result_dict.items(), key=lambda item: item[1][1])
-
-    return sorted_style_sim_bg_img[:5], sorted_color_sim_bg_img[:5]
-
-
-
 def img2text_CLIP(prod_img_path):
     # Load image 
     prod_image = cv2.imread(prod_img_path)

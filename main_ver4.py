@@ -5,7 +5,7 @@ import os
 import datetime
 import time
 from transformers import BertTokenizer, BertModel
-from eval3 import img2text_CLIP
+from eval4 import img2text_CLIP
 import pickle
 from torch import nn
 from googletrans import Translator
@@ -22,7 +22,7 @@ app = Flask(__name__, template_folder=tmpl_dir)
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 bert_model = BertModel.from_pretrained("bert-base-uncased")
 translator = Translator()
-cos_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
+cos_similarity = nn.CosineSimilarity(dim=0, eps=1e-6)
 nCaption = 6
 
 imgPath = os.path.join(abs_path, 'static')
@@ -70,41 +70,35 @@ def upload():
         # img2text_CLIP takes an image file(path) and returns a caption(text) that describes input image the best
         print("filePathList[0] : ", filePathList[0]) # home/ubuntu/...
         
-        caption_orig_list, styles_top5_images, styles_top5 = img2text_CLIP(filePathList[0])
-        print("main // styles_top5_images : ", styles_top5_images)
-        print("main // styles_top5 : ", styles_top5)
+        sorted_captions_show, cos_top5_images, moods_top5, colors_top5 = img2text_CLIP(filePathList[0])
 
-        
-        res_keywords = styles_top5_images
+        res_keywords = cos_top5_images
         print("result : ", res_keywords)
         rel_img_path_list = []
         # for i in range(len(res_keywords)):
         #     # 이미지 path를 보낼 때 static을 포함하면 안된다. 자동으로 static을 붙여서 연결한다!!
         #     rel_img_path_list.append(os.path.join('background_asset/KYJ', res_keywords[i][0]))
-        rel_img_path_list = styles_top5_images
-        
-        print("rel_img_path_list : ", rel_img_path_list)
+        rel_img_path_list = cos_top5_images
         
         caption_list = []
-        
         ## trash code sorry..
-        for temp in styles_top5_images:
-            temp = temp.replace('background_asset/KYJ/', '')
+        for temp in cos_top5_images:
+            #temp = temp.replace('acon', '')
+            temp = temp.split('/')[1]
             print("temp : ", temp)
             caption_list.append(temp)
         
-        
         # image의 category를 보내주기 위해서 parsing을 합니다!
-                    
-        print("caption_list : ", caption_list)
         
-        caption_orig_best = caption_orig_list[0]
+        caption_orig_best = sorted_captions_show[0]
         caption_trans_best = translator.translate(caption_orig_best, src='en', dest='ko').text
         end_time = time.time()
         exec_time = end_time - begin_time
         
-        return render_template('result.html', num_caption=nCaption, filePath=relFilePathList[0], caption_eng=caption_orig_best,
-                               caption_ko=caption_trans_best, recommended_imgs=rel_img_path_list, recommended_captions=caption_list, time=round(exec_time, 2))
+        return render_template('result.html', num_caption=nCaption, filePath=relFilePathList[0], 
+                               caption_eng=caption_orig_best,
+                               caption_ko=caption_trans_best, recommended_imgs=rel_img_path_list, 
+                               recommended_captions=caption_list, time=round(exec_time, 2))
 
     except Exception as e:
         print(e)
