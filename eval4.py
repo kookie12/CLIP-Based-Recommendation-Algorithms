@@ -1,7 +1,8 @@
 '''Modified by Sehyun Kim and Gwan Hyeong Koo. Aug 12th, 2022. RebuilderAI. Seoul, South Korea.'''
+'''eval4.py is for 3d en-space background data'''
 
 import torch
-import os
+import os    
 import cv2
 import numpy as np
 from profanity_filter import ProfanityFilter

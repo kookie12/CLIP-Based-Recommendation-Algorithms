@@ -1,10 +1,10 @@
 # Modified by Sehyun Kim, 2022-08-12(August 12th, 2022), @RebuilderAI, Seoul, South Korea
-
+ 
 import os
 import clip
 import torch
 from etc.eval_keywords import get_kwords_scores_customized_CLIP
-import pandas as pd
+import pandas as pd   
 
 clip_version = "ViT-B/16"
 device = "cuda:0" if torch.cuda.is_available() else "cpu"

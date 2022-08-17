@@ -2,7 +2,7 @@
 
 from eval4 import img2text_CLIP
 from flask import Flask, request, render_template
-import os
+import os    
 import datetime
 import time
 from transformers import BertTokenizer, BertModel

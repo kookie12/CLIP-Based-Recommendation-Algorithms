@@ -1,6 +1,6 @@
 # Modified by Sehyun Kim, Gwan Hyeong Koo, 2022-07-20(July 20th, 2022), @RebuilderAI, Seoul, South Korea
 
-import clip
+import clip  
 import numpy as np
 import openai
 from PIL import Image
