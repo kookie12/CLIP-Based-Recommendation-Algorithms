@@ -1,9 +1,10 @@
 background_asset/*
-background_asset_copy/*
-test_images/*
+test_product_images/*
 word2vec-GoogleNews-vectors/*
 static/2022*
 static/acon/*
+result/acon/*
+result
 static/background_asset/*
 static/CGI_furniture/*
 static/instagram_img/*
