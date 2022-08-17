@@ -1,16 +1,12 @@
 # Modified by Sehyun Kim, Gwan Hyeong Koo, 2022-08-06(Aug 6th, 2022), @RebuilderAI, Seoul, South Korea
 
+from eval4 import img2text_CLIP
 from flask import Flask, request, render_template
 import os
 import datetime
 import time
 from transformers import BertTokenizer, BertModel
-from eval4 import img2text_CLIP
-import pickle
-from torch import nn
 from googletrans import Translator
-import csv
-import pandas as pd
 
 abs_path = os.path.dirname(os.path.abspath(__file__))
 # In the current directory 'templates' directory has html templates(index.html, etc.)
@@ -22,16 +18,7 @@ app = Flask(__name__, template_folder=tmpl_dir)
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 bert_model = BertModel.from_pretrained("bert-base-uncased")
 translator = Translator()
-cos_similarity = nn.CosineSimilarity(dim=0, eps=1e-6)
-nCaption = 6
-
-imgPath = os.path.join(abs_path, 'static')
-
-with open("bg_text_feat.pkl", "rb") as fd:
-    bg_text_feat = pickle.load(fd)
-
-with open("bg_text_feat_3d.pkl", "rb") as fd:
-    bg_text_feat_3d = pickle.load(fd)
+n_caption = 6
 
 # Returns homepage
 @app.route('/', methods=['GET'])
@@ -52,9 +39,9 @@ def upload():
             os.mkdir(img_save_dir)
         
         requests = request.files.getlist('images')
-        filePathList = []
+        fPath_list = []
         # Relative path of the uploaded images is needed to display(through render_template() ) them in the browser
-        relFilePathList = []
+        rel_fPath_list = []
         
         # Save uploaded image in the 'images' folder
         for idx, req in enumerate(requests):
@@ -62,40 +49,30 @@ def upload():
             relFilePath = os.path.join(relFilePath, f"{idx:05d}.png")
             filePath = os.path.join(img_save_dir, f"{idx:05d}.png")
             req.save(filePath)
-            relFilePathList.append(relFilePath)
-            filePathList.append(filePath)
+            rel_fPath_list.append(relFilePath)
+            fPath_list.append(filePath)
 
         # Begin step 1) generating a caption from uploaded image step 2) recommending background asset
         begin_time = time.time()
         # img2text_CLIP takes an image file(path) and returns a caption(text) that describes input image the best
-        print("filePathList[0] : ", filePathList[0]) # home/ubuntu/...
-        
-        sorted_captions_show, cos_top5_images, moods_top5, colors_top5 = img2text_CLIP(filePathList[0])
+        sorted_captions_show, cos_top5_images, moods_top5, colors_top5 = img2text_CLIP(fPath_list[0])
 
-        res_keywords = cos_top5_images
-        print("result : ", res_keywords)
         rel_img_path_list = []
-        # for i in range(len(res_keywords)):
-        #     # 이미지 path를 보낼 때 static을 포함하면 안된다. 자동으로 static을 붙여서 연결한다!!
-        #     rel_img_path_list.append(os.path.join('background_asset/KYJ', res_keywords[i][0]))
         rel_img_path_list = cos_top5_images
         
         caption_list = []
-        ## trash code sorry..
         for temp in cos_top5_images:
             #temp = temp.replace('acon', '')
             temp = temp.split('/')[1]
-            print("temp : ", temp)
             caption_list.append(temp)
         
         # image의 category를 보내주기 위해서 parsing을 합니다!
-        
         caption_orig_best = sorted_captions_show[0]
         caption_trans_best = translator.translate(caption_orig_best, src='en', dest='ko').text
         end_time = time.time()
         exec_time = end_time - begin_time
         
-        return render_template('result.html', num_caption=nCaption, filePath=relFilePathList[0], 
+        return render_template('result.html', num_caption=n_caption, filePath=rel_fPath_list[0], 
                                caption_eng=caption_orig_best,
                                caption_ko=caption_trans_best, recommended_imgs=rel_img_path_list, 
                                recommended_captions=caption_list, time=round(exec_time, 2))

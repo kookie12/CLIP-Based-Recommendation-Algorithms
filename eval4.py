@@ -1,4 +1,4 @@
-# Modified by Sehyun Kim, Gwan Hyeong Koo, 2022-08-06(Aug 6th, 2022), @RebuilderAI, Seoul, South Korea
+'''Modified by Sehyun Kim and Gwan Hyeong Koo. Aug 12th, 2022. RebuilderAI. Seoul, South Korea.'''
 
 import torch
 import os
@@ -10,16 +10,14 @@ from torch import nn
 import pandas as pd
 import pickle
 import clip
-print("here in eval4.py")
 
-# clip_feat_dim depends on clip_version. In this case, clip_feat_dim is set to 512
+# clip_feat_dim depends on clip_version. In this case, clip_feat_dim means CLIP model's feature dimension and it is set to 512.
 clip_version = "ViT-B/16"
 # Available CLIP model versions: ["RN50", "RN101", "RN50x4", "RN50x16", "RN50x64", "ViT-B/32", "ViT-B/16", "ViT-L/14"] {type:"string"}
 clip_feat_dim = {'RN50': 1024, 'RN101': 512, 'RN50x4': 640, 'RN50x16': 768, 'RN50x64': 1024, 'ViT-B/32': 512, 'ViT-B/16': 512, 'ViT-L/14': 768}[clip_version]
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
-# Must set jit = False for training
-model, preprocess = clip.load(clip_version, device=device, jit=False)
 
+model, preprocess = clip.load(clip_version, device=device, jit=False)
 model.cuda().eval()
 
 # Load scene categories from Places365 and compute their CLIP features.
@@ -44,7 +42,6 @@ if not os.path.exists(obj_text_fName):
         object_categories = fid.readlines()
     object_texts = []
     pf = ProfanityFilter()
-    # len(object_categories) = 11166
     for object_text in object_categories[1:]:
         object_text = object_text.strip()
         object_text = object_text.split('\t')[3]
@@ -72,11 +69,7 @@ else:
     with open(obj_feat_fName, "rb") as feat_fd:
         object_feats = pickle.load(feat_fd)
 
-img_moods_original = ['calm', 'monotonous', 'gloomy', 'cozy', 'hopeful', 
-                'promising', 'horrible', 'scary', 'mysterious', 
-                'peaceful', 'romantic', 'solitary', 'touching', 'depressing', 
-                'fantastic', 'lively']
-
+# keywords for image recommendation.
 img_moods = ['calm', 'peaceful', 'cozy', 'relaxing',
              'active', 'lively', 'dynamic',
              'green', 'eco-friendly', 'nature',
@@ -84,16 +77,18 @@ img_moods = ['calm', 'peaceful', 'cozy', 'relaxing',
              'gloomy', 'dark', 'somber',
              'eccentric', 'mysterious', 'fantastic',
              'romantic', 'lovely', 'beautiful']
-
-img_styles = ['black modern', 'white modern', 'black luxury', 'white luxury', 'nature with green plant', 'street hiphop', 
-              'dark brown wood', 'light brown wood', 'neon sign', 'antique', 'traditional', 'industrial', 'cozy', 
-              'science-fiction', 'magical', 'pink romantic', 'artistic', 'office', 'bathroom']
-
+img_styles = ['black modern', 'white modern', 'black luxury', 
+              'white luxury', 'nature with green plant', 'street hiphop', 
+              'dark brown wood', 'light brown wood', 'neon sign', 'antique', 
+              'traditional', 'industrial', 'cozy', 
+              'science-fiction', 'magical', 'pink romantic', 
+              'artistic', 'office', 'bathroom']
 img_colors = ['White', 'Yellow', 'Blue', 'Red', 'Green', 
             'Black', 'Brown', 'Beige', 'Ivory', 'Silver', 
             'Purple', 'Navy', 'Gray', 'Orange', 'Pink', 'Khaki']
 
-img_places = ['bed room', 'cafe', 'library', 'modern dining room', 'office', 'park', 'yard with table']
+img_places = ['bed room', 'cafe', '`library', 'modern dining room', 
+              'office', 'park', 'yard with table']
 
 obj_topk = 10
 num_captions = 3
@@ -101,50 +96,29 @@ num_captions = 3
 def img2text_CLIP(prod_img_path):
     # Load image 
     prod_image = cv2.imread(prod_img_path)
-    prod_image = cv2.cvtColor(prod_image, cv2.COLOR_BGR2RGB) # , cv2.COLOR_BGR2RGB
+    prod_image = cv2.cvtColor(prod_image, cv2.COLOR_BGR2RGB)
     prod_img_feats = get_img_feats(model, preprocess, prod_image)
     
-    print("start imt2text_CLIP 1")
-    
-    # define cos similarity
-    # dimenstion = 0이어야 scalar 가 나온다!
+    # If dim=1 it returns error. To get scalar value, dimension must be set to 0.
     cos_similarity = nn.CosineSimilarity(dim=0, eps=1e-6) 
     
     # Get image style, color, and mood
     bg_mood_score_df = pd.read_csv('./results/acon/mood_score.csv')
     bg_color_score_df = pd.read_csv('./results/acon/color_score.csv')
     bg_place_score_df = pd.read_csv('./results/acon/place_score.csv')
-    
-    print("start imt2text_CLIP 2")
-    
-    ### Zero-shot VLM: classify image style
-    # img_styles_feats = get_text_feats(model, [f'Style of the image is {t}.' for t in img_styles])
-    # sorted_img_styles, prod_img_style_scores = get_nn_text_customized(img_styles, img_styles_feats, prod_img_feats)
-    # styles_list, astyles_top5_images = [], []
-    
-    print("start imt2text_CLIP 3")
 
     # Zero-shot VLM: classify moods.
-    place_topk = 3
     mood_feats = get_text_feats(model, [f'Mood of this photo is {p}.' for p in img_moods ])
     sorted_moods, moods_scores = get_nn_text_customized(img_moods, mood_feats, prod_img_feats)
     
     ### Zero-shot VLM: classify image color
-    # img_colors_feats = get_text_feats(model, [f'Color of the image background is {t}.' for t in img_colors])
     img_colors_feats = get_text_feats(model, [f'Color of the image is {t}.' for t in img_colors])
     sorted_img_colors, colors_scores = get_nn_text_customized(img_colors, img_colors_feats, prod_img_feats)
     img_color = sorted_img_colors[0]
 
-    # #Zero-shot VLM: classify places.
-    # place_topk = 3
-    # place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in place_texts ])
-    # sorted_places, places_scores = get_nn_text_customized(place_texts, place_feats, prod_img_feats)
-    
     # Zero-shot VLM: classify custom places.
-    cplace_topk = 3
     custom_place_feats = get_text_feats(model, [f'Photo of a {p}.' for p in img_places ])
     sorted_custom_places, places_scores = get_nn_text_customized(img_places, custom_place_feats, prod_img_feats)
-    temp_sorted_places, temp_places_scores = get_nn_text(img_places, custom_place_feats, prod_img_feats)
     
     # Zero-shot VLM: classify objects.
     # obj_topk = 10
@@ -154,16 +128,13 @@ def img2text_CLIP(prod_img_path):
         object_list += f'{sorted_obj_texts[i]}, '
     object_list = object_list[:-2]
 
+
     cos_similarity_list, cos_similarity_list_temp = [], []
     
     # Get top 1 style using custom histogram equalization # NOTE 주석 풀기 
     for place in sorted_custom_places[:4]: 
         for img_fName, color_col in zip(bg_mood_score_df.columns, bg_color_score_df.columns):
             if place in img_fName:
-                # print("col : ", col)
-                # print("1 : ", torch.Tensor(prod_img_style_scores))
-                # print("1.5 : ", bg_mood_score_df[col])
-                # print("2 : ", torch.Tensor(bg_mood_score_df[col]))
                 cos_place = cos_similarity(torch.Tensor(places_scores), torch.Tensor(bg_place_score_df[img_fName]))
                 cos_mood = cos_similarity(torch.tensor(moods_scores), torch.tensor(bg_mood_score_df[img_fName]))
                 cos_color = cos_similarity(torch.tensor(colors_scores), torch.tensor(bg_color_score_df[color_col]))
@@ -184,9 +155,6 @@ def img2text_CLIP(prod_img_path):
                 cos_similarity_list.append(cos_similarity_list_temp[0])
             cos_similarity_list_temp = []
         
-    # cos_similarity = sorted(cos_similarity, lambda x: x[0], reverse=True)
-    
-    print("start imt2text_CLIP 4")
     # cos_similarity_list.sort(reverse=True)
     cos_top5_images = [x[1] for x in cos_similarity_list[:6]]
         
@@ -194,7 +162,6 @@ def img2text_CLIP(prod_img_path):
     moods_top5, colors_top5 = {}, {}
     temp_list, temp_list2 = [], []
     
-    print("start imt2text_CLIP 5")
     # 선택된 5개 사진의 style이 어떤 것인지 가져옵니다 @kookie12
     for image in cos_top5_images:
         moods_top5[image] = []
@@ -220,10 +187,6 @@ def img2text_CLIP(prod_img_path):
         
         temp_list, temp_list2 = [], []
     
-    # print("styles_top5_images: ", styles_top5_images) # 나중에 지울 것.. @kookie12
-    # print("styles_top5: ", styles_top5) # 나중에 지울 것.. @kookie12
-
-
     # GPT-3 is All You Need - please save him..
     prompt_show = f'''
     This object is {object_list} and the object color is {img_color}. 
@@ -252,9 +215,3 @@ if __name__ == '__main__':
     print("cos_top5_images: ", cos_top5_images)
     print("moods_top5: ", moods_top5)
     print("colors_top5: ", colors_top5)
-
-    # sorted_captions_show, sorted_places, sorted_custom_places, sorted_img_colors = img2text_CLIP("./static/acon/bed room/Spectaculer Bed Roomset.png")
-    # print("sorted_captions_show: ", sorted_captions_show)
-    # print("sorted_places: ", sorted_places)
-    # print("sorted_custom_places: ", sorted_custom_places)
-    # print("sorted_img_colors: ", sorted_img_colors)
